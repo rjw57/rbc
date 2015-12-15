@@ -1,0 +1,18 @@
+digraph {
+    rankdir="LR";
+    node [ shape="rect" ] ;
+
+    source [ label="Source Code"; shape="note" ] ;
+    parsetree [ label="Parse Tree" ] ;
+    ast [ label="Abstract\nSyntax Tree" ] ;
+    module [ label="LLVM Module\nAssembly" ] ;
+
+    parser [ label="rbc.parser" shape="plaintext" ] ;
+    semantics [ label="rbc.semantics" shape="plaintext" ] ;
+    codegen [ label="rbc.codegen" shape="plaintext" ] ;
+
+    source -> parser -> parsetree ;
+    parsetree -> semantics -> ast ;
+    ast -> codegen -> module ;
+}
+

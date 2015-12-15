@@ -1,0 +1,5 @@
+*.html
+*.pdf
+_build/
+a.out
+

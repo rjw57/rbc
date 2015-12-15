@@ -1,0 +1,19 @@
+digraph {
+    rankdir="LR";
+    node [ shape="rect" ] ;
+
+    module [ label="LLVM Module\nAssembly" ] ;
+    object [ label="ELF Native\nObject File" shape="note" ] ;
+    executable [ label="Executable File" shape="note" ] ;
+    llvm [ label="LLVM" shape="plaintext" ] ;
+
+    linker [ label="Linker" shape="plaintext" ] ;
+
+    module -> llvm -> object ;
+    object -> linker -> executable ;
+
+    libb [ label="libb.o" shape="note" ] ;
+    libb_source [ label="libb.c" shape="note" ] ;
+    gcc [ label="GCC or\nClang" shape="plaintext" ];
+    libb_source -> gcc -> libb -> linker ;
+}
