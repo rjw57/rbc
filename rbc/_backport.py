@@ -5,7 +5,6 @@ Backports of Python functionality.
 import shutil as _shutil
 import sys as _sys
 import tempfile as _tempfile
-import warnings as _warnings
 
 __all__ = ['TemporaryDirectory']
 
@@ -32,7 +31,7 @@ class _TemporaryDirectoryBackport(object):
     def __enter__(self):
         return self.name
 
-    def cleanup(self, _warn=False):
+    def cleanup(self):
         if self.name and not self._closed:
             try:
                 _shutil.rmtree(self.name)
@@ -46,16 +45,12 @@ class _TemporaryDirectoryBackport(object):
                     ex, self,))
                 return
             self._closed = True
-            if _warn:
-                _warnings.warn("Implicitly cleaning up {!r}".format(self),
-                               ResourceWarning)
 
     def __exit__(self, exc, value, tb):
         self.cleanup()
 
     def __del__(self):
-        # Issue a ResourceWarning if implicit cleanup needed
-        self.cleanup(_warn=True)
+        self.cleanup()
 
 # Try standard tempfile implementation in preference to backported one
 try:
