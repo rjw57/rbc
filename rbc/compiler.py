@@ -16,7 +16,8 @@ from rbc.semantics import BSemantics
 from rbc._backport import TemporaryDirectory
 
 # pylint: disable=assignment-from-no-return
-_LIBB_SOURCE_FILE = pkg_resources.resource_filename(__name__, 'libb.c')
+_LIBB_C_SOURCE_FILE = pkg_resources.resource_filename(__name__, 'libb.c')
+_LIBB_B_SOURCE_FILE = pkg_resources.resource_filename(__name__, 'libb.b')
 
 def _ensure_llvm():
     """Ensure that LLVM has been initialised."""
@@ -188,9 +189,11 @@ def compile_and_link(output, source_files, options=None,
     options = options if options is not None else CompilerOptions()
 
     with TemporaryDirectory() as tmp_dir:
-        libb_obj = os.path.join(tmp_dir, 'libb.o')
-        env.compile_c_source(libb_obj, _LIBB_SOURCE_FILE)
-        compiled_source_files = [libb_obj]
+        libb1_obj = os.path.join(tmp_dir, 'libb1.o')
+        env.compile_c_source(libb1_obj, _LIBB_C_SOURCE_FILE)
+        libb2_obj = os.path.join(tmp_dir, 'libb2.o')
+        compile_b_to_native_object(libb2_obj, _LIBB_B_SOURCE_FILE, options)
+        compiled_source_files = [libb1_obj, libb2_obj]
         for file_idx, source_file in enumerate(source_files):
             out_file = os.path.join(tmp_dir, 'tmp{}.o'.format(file_idx))
             _, ext = os.path.splitext(source_file)

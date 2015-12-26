@@ -23,3 +23,13 @@ def test_lchar(check_output):
             putstr(s);
         }
     ''', 'XYZ')
+
+def test_printn(check_output):
+    check_output('''
+        main() {
+            extrn printn, putchar;
+            printn(42, 2); putchar('*n');
+            printn(42, 8); putchar('*n');
+            printn(42, 10); putchar('*n');
+        }
+    ''', '101010\n52\n42\n')

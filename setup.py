@@ -36,6 +36,6 @@ setup(
     },
 
     package_data = {
-        'rbc': ['*.c'],
+        'rbc': ['*.c', '*.b'],
     },
 )
