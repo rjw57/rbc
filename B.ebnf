@@ -40,7 +40,7 @@ labelstatement = !('default') label:name ':' statement:statement ;
 
 gotostatement = 'goto' ~ label:name ';' ;
 
-switchstatement = 'switch' '(' ~ rvalue:expr ')' body:statement ;
+switchstatement = 'switch' ~ rvalue:expr ~ body:statement ;
 
 casestatement = ( ( 'case' cond:constantexpr ) | 'default' ) ~ ':'
                 then:statement ;

@@ -11,4 +11,3 @@ printn(n,b) {
 		printn(a, b); /* recursive */
 	putchar(n%b + '0');
 }
-

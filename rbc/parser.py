@@ -17,7 +17,7 @@ from grako.parsing import graken, Parser
 from grako.util import re, RE_FLAGS
 
 
-__version__ = (2015, 12, 26, 11, 31, 30, 5)
+__version__ = (2015, 12, 26, 22, 15, 59, 5)
 
 __all__ = [
     'BParser',
@@ -202,11 +202,10 @@ class BParser(Parser):
     @graken()
     def _switchstatement_(self):
         self._token('switch')
-        self._token('(')
         self._cut()
         self._expr_()
         self.ast['rvalue'] = self.last_node
-        self._token(')')
+        self._cut()
         self._statement_()
         self.ast['body'] = self.last_node
 
