@@ -5,4 +5,4 @@ ignore=parser.py
 disable=too-few-public-methods, fixme, missing-docstring, no-self-use,
     no-member, invalid-name, too-many-ancestors, redefined-variable-type,
     too-many-locals, too-many-public-methods, too-many-instance-attributes,
-    redefined-builtin, too-many-lines
+    redefined-builtin, too-many-lines, wrong-import-order
