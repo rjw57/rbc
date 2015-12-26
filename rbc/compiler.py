@@ -129,7 +129,7 @@ class CompilationEnvironment(object):
     """
     def __init__(self):
         self.gcc = whichcraft.which('gcc')
-        self.cflags = []
+        self.cflags = ['-std=gnu99']
         self.cppflags = []
         self.ldflags = []
 
