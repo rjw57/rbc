@@ -431,6 +431,29 @@ word-oriented which requires that the alignment of the target be suitable. This
 also necessitates the use of constructor functions and wrappers to shuffle
 between "addresses" and pointers used by LLVM.
 
+lvalues and rvalues
+'''''''''''''''''''
+
+B divides values into two categories: *lvalue* and *rvalue*. The essential
+difference is that an lvalue represents the address in memory of some other
+value. Thus each lvalue has an associated rvalue (the value pointed to by the
+address) but each rvalue does not have an associated lvalue. If an rvalue *does*
+have some address associated with it the address may be obtained via the ``&``
+or "reference" operator. This address is itself an rvalue. An rvalue may not be
+referenced. Both lvalues and rvalues may be "dereferenced" via the ``*``
+operator to yield an lvalue.
+
+Scopes
+''''''
+
+Scopes associate names with lvalues. The addresses associated with lvalues never
+change. "Assigning" to a variable involves writing a new value at the associated
+address. Variables are simply the lvalues in scopes retrieved by name but the
+name is only looked up at emit()-time. This is to allow forward-references to
+in-scope but yet-to-be-declared variables such as global definitions.
+
+Scopes are implemented as dict-like objects with string keys and LValue values.
+
 Names
 '''''
 
