@@ -5,11 +5,20 @@ rbc: Rich's B compiler
    :trim:
 
 This document describes my attempt at writing a compiler for the `B programming
-language`_ for fun over the Christmas vacation 2015. B is a language developed
-around the early 70s which is a direct predecessor of C. I've implemented a B
-compiler in Python which acts much like the system compiler.
+language`_ for fun over the Christmas vacation 2015.  B is a language developed
+around the early 70s which is a direct predecessor of C. The compiler is
+written in Python and uses LLVM for cross-platform native code generation.
+
+It is intended to serve as a good introductory example of writing a compiler
+targeting LLVM. After all, I wrote it to learn just that.
 
 .. _B programming language: https://en.wikipedia.org/wiki/B_(programming_language)
+
+Usage Summary
+-------------
+
+See the :download:`README.rst <../README.rst>` file for installation
+instructions. The compiler provides a single command: ``rbc``.
 
 Given the following program:
 
@@ -29,7 +38,8 @@ It can emit ELF object files:
 
    $ rbc -c helloworld.b
    $ file helloworld.o
-   helloworld.o: ELF 64-bit LSB relocatable, x86-64, version 1 (GNU/Linux), not stripped
+   helloworld.o: ELF 64-bit LSB relocatable, x86-64, version 1
+   (GNU/Linux), not stripped
    $ nm helloworld.o
    0000000000000000 T b.main
                     U b.putstr
@@ -40,11 +50,7 @@ It can emit native assembly:
 
    $ rbc -s helloworld.s
    $ cat helloworld.s
-           .text
-           .file   "helloworld.b"
-           .globl  b.main
-           .align  16, 0x90
-           .type   b.main,@function
+           ...
    b.main:
            .cfi_startproc
            pushq   %rax
@@ -59,16 +65,20 @@ It can emit native assembly:
    .Ltmp1:
            .size   b.main, .Ltmp1-b.main
            .cfi_endproc
+           ...
 
-           .type   .Lb.__str.0,@object
-           .section        .rodata,"a",@progbits
-           .align  8
-   .Lb.__str.0:
-           .ascii  "Hello, world!\n\004"
-           .size   .Lb.__str.0, 15
+Much like the clang compiler, the ``--emit-llvm`` flag may be specified to emit
+LLVM bitcode and LLVM IR assembly in place of native objects and native
+assembly.
 
+Overview
+--------
 
-           .section        ".note.GNU-stack","",@progbits
+This document starts with an introduction to the project, its scope and the aims
+I had when starting. The high-level Python interface to the compiler is
+then discussed. An overview of the tooling used to generate the parser and a
+discussion of the abstract syntax tree follows. Code generation via LLVM is then
+discussed. Finally an API reference is provided.
 
 Introduction
 ------------
@@ -175,6 +185,9 @@ clever user.
 The B programming language
 --------------------------
 
+This section discusses the history of the B language and will provide some
+example code. It will not attempt to be a full description of the language.
+
 Writing this compiler has really made me appreciate the position B occupies with
 respect to the history of C. The restrictions of the PDP-7 environment it was
 created in meant that it clearly demonstrates the asceticism of C but has one
@@ -275,21 +288,31 @@ the ``libb.o`` object file containing the B standard library is also linked in:
 Notice that the standard library is written in both C *and* B. This is to allow
 use of the portable standard C library for I/O.
 
-The Grako parser
-----------------
+Using the compiler via the Python API
+-------------------------------------
+
+.. todo:: Complete section
+
+Implementation
+--------------
+
+Parsing and semantics
+'''''''''''''''''''''
 
 We make use of the grako_ parser tool for Python to generate the parser. It's
 simple to use and provides a useful abstraction between the structure of the
 parse tree and the structure of the AST.
 
 The input to grako is the :download:`B.ebnf <../B.ebnf>` file. This file
-specifies the grammar of the B language in EBNF_ form. Grako then compiles the
-EBnF grammar into the parser module source file :download:`parser.py
-<../rbc/parser.py>`.
+specifies the grammar of the B language in EBNF_ form as a `Parsing Expression
+Grammar`_ (PEG). Grako then compiles the EBNF grammar into the parser module
+source file :download:`parser.py <../rbc/parser.py>`.
 
 .. _grako: https://pypi.python.org/pypi/grako
 
 .. _EBNF: https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_Form
+
+.. _Parsing Expression Grammar: https://en.wikipedia.org/wiki/Parsing_expression_grammar
 
 The parser is encapsulated within the :py:class:`rbc.parser.BParser` class which
 provides a single public method: :py:meth:`.parse`.
@@ -341,6 +364,7 @@ For example, the :py:mod:`rbc.dumpast` module contains a class,
 .. code:: python
 
    import sys
+   from rbc.dumpast import GraphvizAST
    from rbc.parser import BParser
    from rbc.semantics import BSemantics
 
@@ -368,15 +392,54 @@ Results in the following graph:
 
 .. graphviz:: fig/graphvizex.ast.dot
 
+Code generation
+'''''''''''''''
+
+The LLVM code for the program is emitted after the program has been fully
+parsed. This is required because B functions may refer to functions and external
+variables which have not yet been defined in the program.
+
+LLVM code is emitted within an "emit context". (See
+:py:class:`rbc.codegen.EmitContext`.) This is some mutable state which is used
+to keep important information on the program and the current state of the LLVM
+code emission.
+
+Symbol naming
+'''''''''''''
+
+B allows for global externally visible symbols such as functions. To avoid
+clashes with the C world, we mangle the symbol names. By default the B world
+can't see C and vice versa. This is done by prefixing all B symbols with "b."
+which renders them invalid as C identifiers. The function
+:py:func:`.mangle_symbol_name` is used as a central place to record this
+convention.
+
+Addresses and pointers and words, oh my!
+''''''''''''''''''''''''''''''''''''''''
+
+Although B lacks what would today be called a type system (every object is
+of type "word") there is an implicit one in that addresses are assumed to
+be word oriented and thus "address" + "word" should really be "address" +
+(word size * "word") in a byte-oriented architecture. We need to tackle
+this since ``a[b]`` is syntactic sugar for ``*(a + b)`` and we don't know at
+emit time which of a and/or b are pointers.  This is further complicated by the
+fact that *neither* of ``a`` or ``b`` *need* be pointers, ``1[2]`` is a valid
+vector expression in B, albeit one likely to lead to an invalid memory access.
+
+The most straight-forward approach is to have address values be stored
+word-oriented which requires that the alignment of the target be suitable. This
+also necessitates the use of constructor functions and wrappers to shuffle
+between "addresses" and pointers used by LLVM.
+
 Names
 '''''
 
 A fundamental token type in B is the *name*. According to the reference manual:
 
-   The characters A through Z, a through z, _, ., and backspace are alphabetic
-   characters and may be used in names. The characters O through 9 are digits
-   and may be used in constants or names; however, a name may not begin with a
-   digit.
+   The characters ``A`` through ``Z``, ``a`` through ``z``, ``_``, ``.``, and
+   backspace are alphabetic characters and may be used in names. The characters
+   ``0`` through ``9`` are digits and may be used in constants or names;
+   however, a name may not begin with a digit.
 
 The grako tool allows regular expressions to be used in parsers. We can express
 the rule above via the following EBNF::
@@ -451,17 +514,19 @@ the resulting AST:
 
 .. graphviz:: fig/simpledefs.ast.dot
 
-Externals
----------
-
-This section describes the additional grammar and semantics used to construct
-the external (i.e. non-function body) parts of the B language..
-
 Vector externals
 ''''''''''''''''
 
-Unlike a simple external definition, a vector definition can take both a length
-and a list of initialisers. The grammar is as follows::
+Unlike a simple external definition, a vector definition can take both a maximum
+index and a list of initialisers. Note that the vector is defined by the maximum
+index and is 0-based and so the external variable definition
+
+.. code::
+
+   myvec [5]
+
+actually defines a vector of length *six* elements. I.e., indices 0 through 5.
+The grammar is as follows::
 
    vectordef = name:name '[' [ maxidx:constantexpr ] ']'
                [ ivals:ivallist ] ';' ;
@@ -524,44 +589,38 @@ We can now parse the following program:
 
 .. graphviz:: fig/functiondef.ast.dot
 
-Code generation context
------------------------
+Null statements
+'''''''''''''''
 
-The LLVM code for the program is emitted after the program has been fully
-parsed. This is required because B functions may refer to functions and external
-variables which have not yet been defined in the program.
+"Extrn" statements
+''''''''''''''''''
 
-LLVM code is emitted within an "emit context". (See
-:py:class:`rbc.codegen.EmitContext`.) This is some mutable state which is used
-to keep important information on the program and the current state of the LLVM
-code emission.
+"Auto" statements
+'''''''''''''''''
 
-Symbol naming
+Expressions
+'''''''''''
+
+Return statements
+'''''''''''''''''
+
+Compound statements
+'''''''''''''''''''
+
+Break statements
+''''''''''''''''
+
+If statements
 '''''''''''''
 
-B allows for global externally visible symbols such as functions. To avoid
-clashes with the C world, we mangle the symbol names. By default the B world
-can't see C and vice versa. This is done by prefixing all B symbols with "b."
-which renders them invalid as C identifiers. The function
-:py:func:`.mangle_symbol_name` is used as a central place to record this
-convention.
+While statements
+''''''''''''''''
 
-Addresses and pointers and words, oh my!
-''''''''''''''''''''''''''''''''''''''''
+Goto and label statements
+'''''''''''''''''''''''''
 
-Although B lacks what would today be called a type system (every object is
-of type "word") there is an implicit one in that addresses are assumed to
-be word oriented and thus "address" + "word" should really be "address" +
-(word size * "word") in a byte-oriented architecture. We need to tackle
-this since ``a[b]`` is syntactic sugar for ``*(a + b)`` and we don't know at
-emit time which of a and/or b are pointers.  This is further complicated by the
-fact that *neither* of ``a`` or ``b`` *need* be pointers, ``1[2]`` is a valid
-vector expression in B, albeit one likely to lead to an invalid memory access.
-
-The most straight-forward approach is to have address values be stored
-word-oriented which requires that the alignment of the target be suitable. This
-also necessitates the use of constructor functions and wrappers to shuffle
-between "addresses" and pointers used by LLVM.
+Switch and case statements
+''''''''''''''''''''''''''
 
 Reference
 ---------
