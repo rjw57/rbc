@@ -272,8 +272,8 @@ the ``libb.o`` object file containing the B standard library is also linked in:
 
 .. graphviz:: fig/llvm_to_exe.dot
 
-Notice that the standard library is written in C. This is to allow use of the
-portable standard C library for I/O.
+Notice that the standard library is written in both C *and* B. This is to allow
+use of the portable standard C library for I/O.
 
 The Grako parser
 ----------------
@@ -527,7 +527,41 @@ We can now parse the following program:
 Code generation context
 -----------------------
 
-**FIXME: Missing section.**
+The LLVM code for the program is emitted after the program has been fully
+parsed. This is required because B functions may refer to functions and external
+variables which have not yet been defined in the program.
+
+LLVM code is emitted within an "emit context". (See
+:py:class:`rbc.codegen.EmitContext`.) This is some mutable state which is used
+to keep important information on the program and the current state of the LLVM
+code emission.
+
+Symbol naming
+'''''''''''''
+
+B allows for global externally visible symbols such as functions. To avoid
+clashes with the C world, we mangle the symbol names. By default the B world
+can't see C and vice versa. This is done by prefixing all B symbols with "b."
+which renders them invalid as C identifiers. The function
+:py:func:`.mangle_symbol_name` is used as a central place to record this
+convention.
+
+Addresses and pointers and words, oh my!
+''''''''''''''''''''''''''''''''''''''''
+
+Although B lacks what would today be called a type system (every object is
+of type "word") there is an implicit one in that addresses are assumed to
+be word oriented and thus "address" + "word" should really be "address" +
+(word size * "word") in a byte-oriented architecture. We need to tackle
+this since ``a[b]`` is syntactic sugar for ``*(a + b)`` and we don't know at
+emit time which of a and/or b are pointers.  This is further complicated by the
+fact that *neither* of ``a`` or ``b`` *need* be pointers, ``1[2]`` is a valid
+vector expression in B, albeit one likely to lead to an invalid memory access.
+
+The most straight-forward approach is to have address values be stored
+word-oriented which requires that the alignment of the target be suitable. This
+also necessitates the use of constructor functions and wrappers to shuffle
+between "addresses" and pointers used by LLVM.
 
 Reference
 ---------

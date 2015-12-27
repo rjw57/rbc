@@ -12,8 +12,12 @@ digraph {
     module -> llvm -> object ;
     object -> linker -> executable ;
 
-    libb [ label="libb.o" shape="note" ] ;
-    libb_source [ label="libb.c" shape="note" ] ;
+    libb_c [ label="libb_c.o" shape="note" ] ;
+    libb_c_source [ label="libb.c" shape="note" ] ;
+    libb_b_source [ label="libb.b" shape="note" ] ;
+    libb_b [ label="libb_b.o" shape="note" ] ;
     gcc [ label="GCC or\nClang" shape="plaintext" ];
-    libb_source -> gcc -> libb -> linker ;
+    rbc [ label="rbc" shape="plaintext" ];
+    libb_c_source -> gcc -> libb_c -> linker ;
+    libb_b_source -> rbc -> libb_b -> linker ;
 }
