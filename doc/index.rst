@@ -260,8 +260,8 @@ builtin variable::
 This builtin may give the illusion of portability but I suspect that the effort
 required to write maximally portable B code is probably not worth the results.
 
-Structure of the rbc compiler
------------------------------
+Structure of the compiler
+-------------------------
 
 This section describes the high-level structure of the rbc compiler in terms of
 data flow from source code to object code and executable.
