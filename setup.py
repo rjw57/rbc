@@ -50,7 +50,6 @@ setup(
         'Topic :: Software Development :: Code Generators',
         'Topic :: Software Development :: Compilers',
         'License :: OSI Approved :: MIT License',
-        'Programming Language :: B',
         'Environment :: Console',
     ],
     keywords='compiler B llvm example',
