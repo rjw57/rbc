@@ -16,7 +16,12 @@ else:
 # discovering any Python packages we ship.
 setup(
     name='rbc',
-    version='0.0.1dev',
+    version='0.1.0a',
+    description='Example B compiler written with LLVM',
+    url='https://github.com/rjw57/rbc',
+    author='Rich Wareham',
+    author_email='rich.rbc@richwareham.com',
+    license='MIT',
     packages=find_packages(),
 
     # PyPI packages required for the *installation* and usual running of the
@@ -35,7 +40,18 @@ setup(
         ],
     },
 
-    package_data = {
+    package_data={
         'rbc': ['*.c', '*.b'],
     },
+
+    classifiers=[
+        'Development Status :: 4 - Beta',
+        'Intended Audience :: Developers',
+        'Topic :: Software Development :: Code Generators',
+        'Topic :: Software Development :: Compilers',
+        'License :: OSI Approved :: MIT License',
+        'Programming Language :: B',
+        'Environment :: Console',
+    ],
+    keywords='compiler B llvm example',
 )
