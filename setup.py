@@ -51,6 +51,8 @@ setup(
         'Topic :: Software Development :: Compilers',
         'License :: OSI Approved :: MIT License',
         'Environment :: Console',
+        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3',
     ],
     keywords='compiler B llvm example',
 )
