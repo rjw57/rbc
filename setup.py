@@ -16,7 +16,7 @@ else:
 # discovering any Python packages we ship.
 setup(
     name='rbc',
-    version='0.1.0a',
+    version='0.2.0',
     description='Example B compiler written with LLVM',
     url='https://github.com/rjw57/rbc',
     author='Rich Wareham',
