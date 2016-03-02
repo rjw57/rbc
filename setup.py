@@ -30,7 +30,7 @@ setup(
         'docopt',
         'future',
         'grako',
-        'llvmlite',
+        'llvmlite<0.9.0',
         'whichcraft',
     ] + enum_requires,
 
