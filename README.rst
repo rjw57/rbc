@@ -15,7 +15,7 @@ the LLVM_CONFIG environment variable appropriately.
 
 On Debian/Ubuntu-like Linuxes::
 
-   $ sudo apt install libedit-dev llvm-dev-3.6
+   $ sudo apt install libedit-dev llvm-3.6-dev zlib1g-dev
    $ export LLVM_CONFIG=llvm-config-3.6
 
 On OSX::
